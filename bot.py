@@ -2,15 +2,16 @@ from __future__ import print_function
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy import API
+import httplib, urllib
 
 from tweepy.streaming import StreamListener
 import json
 import re
 
-consumer_key = "agjequxG75iT0dHxn7jCd1uLW"
-consumer_secret = "HxwaAwLisDBiZqBTqLt4AVDHMcba0ZRRyJobwjZ2ubMdgRhVXo"
-access_token_key = "2450454258-64KnS3q2NcT2Ti3gjQa8UDq0rMIXVRfnXQRWB4U"
-access_token_secret = "KRG6K0y6KaJr56qqSADwSdmUSOuxbyUvKV8RRR8oQd9B5"
+consumer_key = "5g9PIp3wwXjVqgkYVFIVGyI2x"
+consumer_secret = "X0BkFrvWoxz9lV1q9XTs7z2dBb0Lh5ZYnx4Zrzsq9ZiKAHzC6N"
+access_token_key = "728681427718524929-duiQPYVfp6dQuG2UMpvVpkQH15kk7Sm"
+access_token_secret = "8aYVeG2m18TRHdLHBSiJGlkJjiZ3rEzhgZQecZwffzbga"
 
 headers = {
     # Request headers
@@ -38,6 +39,8 @@ class Listener( StreamListener ):
 
 
     def str_list_to_json( self, response):
+        if not response:
+            return []
         response = response.split("}")
         response = response[:-1]
         for i in range(len(response)):
@@ -52,7 +55,7 @@ class Listener( StreamListener ):
     def get_accounts(self, cust_id):
         conn = self.conn
         conn.request("GET", "/api/v0.6.3/customers/"+cust_id+"/accounts", "", headers)
-        data = str_list_to_json(conn.getresponse().read())
+        data = self.str_list_to_json(conn.getresponse().read())
 
         accounts = []
         for x in data:
@@ -77,70 +80,80 @@ class Listener( StreamListener ):
         jstr = json.loads(status)
         if "friends" not in jstr:
             mesg = jstr["direct_message"]
+            if mesg["sender"]["name"]=="Archie":
+                return
             self.mesgCount += 1
             text = mesg["text"]
             print("\nNew message: ",self.mesgCount)
-            # print("\nSender Name: ",mesg["sender"]["name"])
+            print("\nSender Name: ",mesg["sender"]["name"])
             print("Sender screen name: ",mesg["sender_screen_name"])
             print("Text received: ",mesg["text"])
             print("Sent at: ",mesg["created_at"])
+            # api.send_direct_message(screen_name=mesg["sender_screen_name"], text="Message received: "+text)
 
             text = text.lower().split(" ")
+            print(text)
 
             if text[0] == "help":
                 # list all the commands
+                pass
 
-
-            '''
-            1. Account info
-            '''
+                '''
+                1. Account info
+                '''
             elif text[0] == "account" and text[1] == "info":
                 try:
+                    print("Getting account info-\n")
                     accounts = self.get_accounts(customer_id)
-                    for k,acc in zip(range(len(data)),data):
+                    for k,acc in zip(range(len(accounts)),accounts):
                         print(k+1,".")
                         print("Acc no: ",acc["accountNumber"])
                         print("Acc type: ",acc["accountType"])
-                        print("Acc balance: ",acc["accountBalance"] + " "+ acc["accountCurrency"])
-                except e:
+                        print("Acc balance: ",str(acc["accountBalance"]) + " " + acc["accountCurrency"])
+                except Exception as e:
                     print("Exception: ",e)
 
 
-            '''
-            2. Transaction history
-            '''
+                '''
+                2. Transaction history
+                '''
             elif text[0] == "transaction" and text[1] == "history":
-                limit = 5
+                limit = 3
                 try:
-                    if text[2]:
+                    if len(text)>=3 and text[2]>0:
                         if text[2].isdigit():
                             limit = int(text[2])
                         else:
                             raise ValueError('Illegal value!')
 
                     accounts = self.get_accounts(customer_id)
+                    print("No. of accounts: ",len(accounts))
                     print("Description | Amount | DateTime | Balance")
 
                     for acc in accounts:
-                        print("for account no: ",acc["accountNumber"],")")
-                        self.conn.request("GET", "/api/v0.6.3/accounts/"+acc["accountNumber"]+"/transactions?limit="+limit,"",headers)
-                        response = conn.getresponse()
-                        data = str_list_to_json(response.read())
+                        print("(for account no: ",acc["accountNumber"],")\n")
 
+                        self.conn.request("GET", "/api/v0.6.3/accounts/"+str(acc["id"])+"/transactions?limit="+str(limit),"",headers)
+                        # print("Query done\n")
+                        response = self.conn.getresponse()
+                        # print("Response received\n")
+                        data = self.str_list_to_json( response.read() )
+                        # print(data)
+                        print("Length of data: ",len(data))
                         for i in range(len(data)):
                             print(i+1,". ",data[i]["transactionDescription"]," | ",data[i]["transactionAmount"]," | ",
                                 data[i]["transactionDateTime"]," | ",data[i]["accountBalance"])
 
 
-                except e:
+                except Exception as e:
                     print("An exception happened: ",e)
 
-            '''
-            3. User info
-            '''
+                '''
+                3. User info
+                '''
             elif text[0] == "my" and text[1]=="info":
                 try:
-                    if text[2] == "display":
+                    if len(text)>=3 and text[2] == "display":
                         self.conn.request("GET", "/api/v0.6.3/customers/"+customer_id,"",headers)
                         response = conn.getresponse()
                         data = json.loads(response().read())[0]
@@ -171,13 +184,13 @@ class Listener( StreamListener ):
                         else:
                             raise IOError('Invalid arguments for update!')
 
-                except e:
+                except Exception as e:
                     print("Exception occured: ",e)
 
 
-            '''
-            4. Payment (to account)
-            '''
+                '''
+                4. Payment (to account)
+                '''
             elif text[0] == "pay" and text[1] and text[2]:
                 try:
                     if len(text[1])==7 and text[1].isdigit():
@@ -204,25 +217,25 @@ class Listener( StreamListener ):
                                 break
                         if flag==0:
                             raise SystemError('Cannot complete transaction!')
-                except e:
+                except Exception as e:
                     print("Exception occured: ",e)
                 #all atms
 
-            '''
-            5. Branches nearby
-            '''
+                '''
+                5. Branches nearby
+                '''
             elif text[0] == "branch" and text[1]=="near":
                 # ask for lat and long or extract location from twitter
-
-            '''
-            6. ATMs nearby
-            '''
+                pass
+                '''
+                6. ATMs nearby
+                '''
             elif text[0] == "atm" and text[1]=="near":
+                pass
 
-
-            '''
-            Invalid
-            '''
+                '''
+                Invalid
+                '''
             else:
                 print("Unknown commands, please try again.")
 
@@ -240,6 +253,7 @@ def main():
         auth.secure = True
         auth.set_access_token(access_token_key, access_token_secret)
 
+        global api
         api = API(auth)
 
         # If the authentication was successful, you should

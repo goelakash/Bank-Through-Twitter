@@ -4,7 +4,7 @@ tdict =     {
   "toAccountNumber":"6000018",
   "toSortCode":"839999",
   "paymentReference":"string",
-  "paymentAmount": 9.0
+  "paymentAmount": 10.0
 }
 
 headers = {
@@ -37,8 +37,8 @@ params = urllib.urlencode({
 
 try:
     conn = httplib.HTTPSConnection('bluebank.azure-api.net')
-    # conn.request("POST", "/api/v0.6.3/accounts/572dbcc9fd3e5d6025180a0f/payments", json.dumps(tdict), headers)
-    conn.request("GET", "/api/v0.6.3/customers/572dbcc9fd3e5d6025180a0e","",headers)
+    conn.request("POST", "/api/v0.6.3/accounts/572dbcc9fd3e5d6025180a0f/payments", json.dumps(tdict), headers)
+    # conn.request("GET", "/api/v0.6.3/customers/572dbcc9fd3e5d6025180a0e","",headers)
     # conn.request("GET", "/api/v0.6.3/customers/572dbcc9fd3e5d6025180a0e/accounts","",headers)
     # conn.request("GET", "/api/v0.6.3/branches/near?%s" % params,"",headers)
     # conn.request("GET", "/api/v0.6.3/accounts/572dbcc9fd3e5d6025180a0f","",headers)
@@ -46,9 +46,11 @@ try:
     # conn.request("GET", "/api/v0.6.3/accounts/572dbcc9fd3e5d6025180a0f/transactions","",headers)
     # conn.request("GET", "/api/v0.6.3/accounts/572dbcc9fd3e5d6025180a0f/transactions?%s"% params,"",headers)
     print("Sent Request")
-    data = json.loads(conn.getresponse().read())[0]
-    for x in data:
-        print(x+": "+data[x])
+    response = conn.getresponse()
+    print(response.read())
+    # data = json.loads(response.read())[0]
+    # for x in data:
+    #     print(x+": "+data[x])
     ### transaction management system
     # print(conn.getresponse().read())
     # response = conn.getresponse().read().split("}")
