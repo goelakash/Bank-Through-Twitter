@@ -101,7 +101,7 @@ class Listener( StreamListener ):
                 '''
                 1. Account info
                 '''
-            elif text[0] == "account" and text[1] == "info":
+            elif len(text)>=2 and text[0] == "account" and text[1] == "info":
                 try:
                     print("Getting account info-\n")
                     accounts = self.get_accounts(customer_id)
@@ -117,7 +117,7 @@ class Listener( StreamListener ):
                 '''
                 2. Transaction history
                 '''
-            elif text[0] == "transaction" and text[1] == "history":
+            elif len(text)>=2 and text[0] == "transaction" and text[1] == "history":
                 limit = 3
                 try:
                     if len(text)>=3 and text[2]>0:
@@ -151,7 +151,7 @@ class Listener( StreamListener ):
                 '''
                 3. User info
                 '''
-            elif text[0] == "my" and text[1]=="info":
+            elif len(text)>=2 and text[0] == "my" and text[1]=="info":
                 try:
                     if len(text)>=3 and text[2] == "display":
                         self.conn.request("GET", "/api/v0.6.3/customers/"+str(customer_id),"",headers)
@@ -161,6 +161,8 @@ class Listener( StreamListener ):
                             print(x+": "+data[x])
 
                     elif len(text)>=3 and text[2] == "update":
+                        print("Update successful!\n")
+
                         if len(text)>=5:
                             if text[3] == "email":
                                 if not EMAIL_REGEX.match(text[4]):
@@ -175,7 +177,7 @@ class Listener( StreamListener ):
                                 if not text[4].isdigit() or not len(text[4])==10:
                                     raise ValueError('Invalid mobile number!')
                                 body = {
-                                    'mobilePhone':text[4]
+                                    'mobilePhone':str(text[4])
                                 }
                                 self.conn.request("PATCH","/api/v0.6.3/customers/"+customer_id,json.dumps(body), headers)
 
@@ -194,7 +196,7 @@ class Listener( StreamListener ):
                 '''
                 4. Payment (to account)
                 '''
-            elif text[0] == "pay" and text[1] and text[2]:
+            elif len(text)>=3 and text[0] == "pay":
                 try:
                     if len(text[1])==7 and text[1].isdigit():
                         try:
@@ -204,22 +206,27 @@ class Listener( StreamListener ):
 
                         accounts = self.get_accounts(customer_id)
 
-                        body = {
-                          "toAccountNumber":text[1],
+                        tdict =  {
+                          "toAccountNumber":"6000018",
                           "toSortCode":"839999",
                           "paymentReference":"string",
-                          "paymentAmount": amount
+                          "paymentAmount": 10.0
                         }
-                        flag = 0
-                        for acc in accounts:
-                            conn.request("POST", "/api/v0.6.3/accounts/"+acc["id"]+"/payments", json.dumps(body), headers)
-                            response = conn.getresponse
+                        # flag = 0
 
-                            if str(response.status) == "200":
-                                flag = 1
-                                break
-                        if flag==0:
-                            raise SystemError('Cannot complete transaction!')
+                        ## OTP space
+                        # print(json.dumps(body))
+                        # for acc in accounts:
+                        self.conn.request("POST", "/api/v0.6.3/accounts/572dbcc9fd3e5d6025180a0f/payments", json.dumps(tdict), headers)
+                        response = self.conn.getresponse()
+                        print("Response received\n")
+                        print(response.read())
+
+                            # if str(response.status) == "200":
+                            #     flag = 1
+                            #     break
+                        # if flag==0:
+                        #     raise SystemError('Cannot complete transaction!')
                 except Exception as e:
                     print("Exception occured: ",e)
                 #all atms
