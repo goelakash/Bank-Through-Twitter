@@ -1,8 +1,10 @@
+from __future__ import print_function
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy import API
 
 from tweepy.streaming import StreamListener
+import json
 
 consumer_key = "agjequxG75iT0dHxn7jCd1uLW"
 consumer_secret = "HxwaAwLisDBiZqBTqLt4AVDHMcba0ZRRyJobwjZ2ubMdgRhVXo"
@@ -12,7 +14,11 @@ access_token_secret = "KRG6K0y6KaJr56qqSADwSdmUSOuxbyUvKV8RRR8oQd9B5"
 class Listener( StreamListener ):
 
     def __init__( self ):
-        self.tweetCount = 0
+        self.mesgCount = 0
+
+    def on_status(self, status):
+        print("Status text!!")
+        print(status.text)
 
     def on_connect( self ):
         print("Connection established!!")
@@ -22,16 +28,16 @@ class Listener( StreamListener ):
 
     def on_data( self, status ):
         print("Entered on_data()")
-        print(status, flush = True)
+        jstr = json.loads(status)
+        if "friends" not in jstr:
+            mesg = jstr["direct_message"]
+            self.mesgCount += 1
+            print("\nNew message: ",self.mesgCount)
+            print("\nSender Name: ",mesg["sender"]["name"])
+            print("Sender screen name: ",mesg["sender_screen_name"])
+            print("Text received: ",mesg["text"])
+            print("Sent at: ",mesg["created_at"])
         return True
-
-    def on_direct_message( self, status ):
-        print("Entered on_direct_message()")
-        try:
-            print(status, flush = True)
-            return True
-        except BaseException as e:
-            print("Failed on_direct_message()", str(e))
 
     def on_error( self, status ):
         print(status)
