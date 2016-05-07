@@ -154,21 +154,22 @@ class Listener( StreamListener ):
             elif text[0] == "my" and text[1]=="info":
                 try:
                     if len(text)>=3 and text[2] == "display":
-                        self.conn.request("GET", "/api/v0.6.3/customers/"+customer_id,"",headers)
-                        response = conn.getresponse()
-                        data = json.loads(response().read())[0]
+                        self.conn.request("GET", "/api/v0.6.3/customers/"+str(customer_id),"",headers)
+                        response = self.conn.getresponse()
+                        data = json.loads(response.read())[0]
                         for x in data:
                             print(x+": "+data[x])
 
-                    elif text[2] == "update":
-                        if text[3] and text[4]:
+                    elif len(text)>=3 and text[2] == "update":
+                        if len(text)>=5:
                             if text[3] == "email":
                                 if not EMAIL_REGEX.match(text[4]):
                                     raise ValueError('Invalid email address!')
                                 body = {
                                     'emailID':text[4]
                                 }
-                                self.conn.request("PATCH","/api/v0.6.3/customers/"+customer_id,json.dumps(body), headers)
+                                self.conn.request("PATCH","/api/v0.6.3/customers/"+str(customer_id),json.dumps(body), headers)
+                                print(self.conn.getresponse().status)
 
                             elif text[3] == "mobile":
                                 if not text[4].isdigit() or not len(text[4])==10:
@@ -183,6 +184,8 @@ class Listener( StreamListener ):
 
                         else:
                             raise IOError('Invalid arguments for update!')
+                    else:
+                        raise IOError('Need more arguments!')
 
                 except Exception as e:
                     print("Exception occured: ",e)
