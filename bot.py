@@ -6,6 +6,7 @@ from tweepy import API
 from tweepy.streaming import StreamListener
 import json
 import re
+import geocoder
 
 consumer_key = "agjequxG75iT0dHxn7jCd1uLW"
 consumer_secret = "HxwaAwLisDBiZqBTqLt4AVDHMcba0ZRRyJobwjZ2ubMdgRhVXo"
@@ -197,7 +198,7 @@ class Listener( StreamListener ):
                         flag = 0
                         for acc in accounts:
                             conn.request("POST", "/api/v0.6.3/accounts/"+acc["id"]+"/payments", json.dumps(body), headers)
-                            response = conn.getresponse
+                            response = conn.getresponse()
 
                             if str(response.status) == "200":
                                 flag = 1
@@ -212,12 +213,47 @@ class Listener( StreamListener ):
             5. Branches nearby
             '''
             elif text[0] == "branch" and text[1]=="near":
+                try:
+                    g = geocoder.google(text[2:])
+                    lat, lng = g.latlng
+                    params = urllib.urlencode({
+                    'lat':lat,
+                    'lng':lng,
+                    'radius':"10000"
+                    })
+                    conn = httplib.HTTPSConnection('bluebank.azure-api.net')
+                    conn.request("GET", "/api/v0.6.3/branches/near?%s" % params,"",headers)
+                    repsonse = conn.getresponse()
+                    data = json.loads(response.read())
+                    for i in range(len(data)):
+                        print("i+1"+data[i].branchName+", "+data[i].streetAddress+", "+data[i].city)
+
+                except e:
+                    print("Exception occured:  ",e)
+
                 # ask for lat and long or extract location from twitter
 
             '''
             6. ATMs nearby
             '''
             elif text[0] == "atm" and text[1]=="near":
+                try:
+                    g = geocoder.google(text[2:])
+                    lat, lng = g.latlng
+                    params = urllib.urlencode({
+                    'lat':lat,
+                    'lng':lng,
+                    'radius':"10000"
+                    })
+                    conn = httplib.HTTPSConnection('bluebank.azure-api.net')
+                    conn.request("GET", "/api/v0.6.3/atms/near?%s" % params,"",headers)
+                    repsonse = conn.getresponse()
+                    data = json.loads(response.read())
+                    for i in range(len(data)):
+                        print("i+1"+data[i].atmName+", "+data[i].streetAddress+", "+data[i].city)
+
+                except e:
+                    print("Exception occured:  ",e)
 
 
             '''
